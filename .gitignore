@@ -1,0 +1,10 @@
+# Ignore arquivos sensíveis e dependências
+.env
+__pycache__/
+.idea/
+*.db
+*.sqlite3
+
+# Ignore ambiente virtual
+venv/
+node_modules/
