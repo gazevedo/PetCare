@@ -1,12 +1,11 @@
 import os
+import re
+
 from flask import Flask, request, jsonify
 from pymongo import MongoClient
 from dotenv import load_dotenv
 from flasgger import Swagger
-from werkzeug.exceptions import BadRequest
-
-# Carregar variáveis do arquivo .env
-from controller.UsuarioController import UsuarioController
+from werkzeug.exceptions import InternalServerError, BadRequest
 
 load_dotenv()
 
@@ -26,11 +25,8 @@ client = MongoClient(MONGO_URI)
 # Especificar o banco de dados
 db = client[DATABASE_NAME]  # Defina o banco de dados
 
-# Instância do controlador de usuário
-usuario_controller = UsuarioController(db)
 
-
-@app.route('/Usuario', methods=['POST'])
+@app.route('/usuario', methods=['POST'])
 def criar_usuario():
     """
     Criar um novo usuário
@@ -55,8 +51,46 @@ def criar_usuario():
         schema:
           id: Usuario
     """
+    usuario_collection = db.usuario
+
     usuario_data = request.get_json()
-    return usuario_controller.criar_usuario(usuario_data)
+    login = usuario_data.get('login')
+    senha = usuario_data.get('senha')
+
+    if not login or not senha:
+        raise BadRequest("Os campos 'login' e 'senha' são obrigatórios.")
+
+    if not validar_email(login):
+        raise BadRequest("O campo 'login' deve ser um email válido.")
+
+    if usuario_collection.find_one({"login": login}):
+        raise BadRequest("Já existe um usuário com este login.")
+
+    usuario = {
+        "login": login,
+        "senha": senha,
+        "nome": usuario_data.get('nome'),
+        "telefone": usuario_data.get('telefone'),
+        "rua": usuario_data.get('rua'),
+        "numero": usuario_data.get('numero'),
+        "bairro": usuario_data.get('bairro'),
+        "cidade": usuario_data.get('cidade'),
+        "loja": os.getenv("loja_id"),
+        "tipo": 'client',
+        "ativo": 1
+    }
+
+    try:
+        result = usuario_collection.insert_one(usuario)
+        usuario['_id'] = str(result.inserted_id)
+        return jsonify(usuario), 201
+    except Exception as e:
+        raise InternalServerError(f"Ocorreu um erro ao criar o usuário: {str(e)}")
+
+
+def validar_email(email):
+    regex = r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
+    return bool(re.match(regex, email))
 
 
 if __name__ == "__main__":
