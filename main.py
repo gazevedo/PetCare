@@ -2,28 +2,19 @@ import os
 import re
 
 from flask import Flask, request, jsonify
-from pymongo import MongoClient
-from dotenv import load_dotenv
 from flasgger import Swagger
 from werkzeug.exceptions import InternalServerError, BadRequest
+from src.controller.UsuarioController import UsuarioController
 
-load_dotenv()
 
 # Criar a instância do Flask
-app = Flask(__name__)
+from src.dal.DbConnect import db
+
 
 # Integrar o Swagger com o Flask
+app = Flask(__name__)
 swagger = Swagger(app)
-
-# Obter a URI do MongoDB diretamente do .env
-MONGO_URI = os.getenv("MONGO_URI")
-DATABASE_NAME = os.getenv("DATABASE_NAME")  # Nome do banco de dados
-
-# Conectar ao MongoDB
-client = MongoClient(MONGO_URI)
-
-# Especificar o banco de dados
-db = client[DATABASE_NAME]  # Defina o banco de dados
+usuario_collection = db.usuario
 
 
 @app.route('/usuario', methods=['POST'])
@@ -51,7 +42,6 @@ def criar_usuario():
         schema:
           id: Usuario
     """
-    usuario_collection = db.usuario
 
     usuario_data = request.get_json()
     login = usuario_data.get('login')
@@ -60,7 +50,7 @@ def criar_usuario():
     if not login or not senha:
         raise BadRequest("Os campos 'login' e 'senha' são obrigatórios.")
 
-    if not validar_email(login):
+    if not UsuarioController.validar_email(login):
         raise BadRequest("O campo 'login' deve ser um email válido.")
 
     if usuario_collection.find_one({"login": login}):
