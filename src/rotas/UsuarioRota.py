@@ -1,7 +1,6 @@
 from flask import request, jsonify
 from werkzeug.exceptions import InternalServerError, BadRequest
 from src.controller.UsuarioController import UsuarioController
-from src.dal.DbConnect import db
 
 
 def UsuarioRotas(app):
@@ -10,7 +9,7 @@ def UsuarioRotas(app):
     """
 
     @app.route('/Usuario', methods=['POST'])
-    def criar_usuario():
+    def criarUsuario():
         """
         Criar um novo usuário
         ---
@@ -55,7 +54,7 @@ def UsuarioRotas(app):
               id: Usuario
         """
 
-        return UsuarioController.criar_usuario(request.get_json(), db)
+        return UsuarioController.criarUsuario(request.get_json())
 
     # Rota para atualizar o usuário
     @app.route('/Usuario/<user_id>', methods=['PUT'])

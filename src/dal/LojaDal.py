@@ -6,13 +6,16 @@ from src.model.Loja import Loja
 
 loja_collection = db.loja
 
+
 class LojaDal:
     @staticmethod
     def getLojaId(id):
-        resultdb = loja_collection.find_one({"_id": ObjectId(id)})
-        return resultdb
+        loja = loja_collection.find_one({"_id": ObjectId(id)})
+        loja["_id"] = str(loja["_id"])
+        return loja
 
     @classmethod
     def getLojaTelefone(cls, telefone):
-        resultdb = loja_collection.find_one({"telefone": telefone})
-        return resultdb
+        loja = loja_collection.find_one({"telefone": telefone})
+        loja["_id"] = str(loja["_id"])
+        return loja
