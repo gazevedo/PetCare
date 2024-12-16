@@ -4,18 +4,6 @@ class Usuario:
     def __init__(
             self, login, senha, nome=None, telefone=None, rua=None, numero=None, bairro=None,
             cidade=None, cpf=None, loja=None, tipo=None, status=None):
-        """
-        Construtor para a classe Usuario. Inicializa os atributos padrão e os passados como parâmetros.
-
-        :param login: O login (e-mail) do usuário.
-        :param senha: A senha do usuário.
-        :param nome: O nome do usuário (opcional).
-        :param telefone: O telefone do usuário (opcional).
-        :param rua: A rua do usuário (opcional).
-        :param numero: O número do endereço do usuário (opcional).
-        :param bairro: O bairro do usuário (opcional).
-        :param cidade: A cidade do usuário (opcional).
-        """
         self.login = login
         self.senha = senha
         self.nome = nome

@@ -1,22 +1,23 @@
 from flask import request, jsonify
 from werkzeug.exceptions import InternalServerError, BadRequest
-
-import os
-
 from src.controller.UsuarioController import UsuarioController
+from src.dal.DbConnect import db
 
 
-def UsuarioRotas(app, db):
+def UsuarioRotas(app):
     """
     Função que registra as rotas de usuário no app Flask
     """
-    @app.route('/usuario', methods=['POST'])
+
+    @app.route('/Usuario', methods=['POST'])
     def criar_usuario():
         """
         Criar um novo usuário
         ---
+        tags:
+          - Usuario
         parameters:
-          - name: usuario
+          - name: telefone
             in: body
             required: true
             schema:
@@ -28,6 +29,24 @@ def UsuarioRotas(app, db):
                   type: string
                 nome:
                   type: string
+                cpf:
+                  type: string
+                telefone:
+                  type: string
+                rua:
+                    type: string
+                numero:
+                    type: string
+                bairro:
+                    type: string
+                cidade:
+                    type: string
+                loja:
+                    type: string
+                tipo:
+                    type: string
+                status:
+                    type: string
 
         responses:
           200:
@@ -36,15 +55,16 @@ def UsuarioRotas(app, db):
               id: Usuario
         """
 
-        return UsuarioController.criar_usuario(request.get_json(), db);
-
+        return UsuarioController.criar_usuario(request.get_json(), db)
 
     # Rota para atualizar o usuário
-    @app.route('/usuario/<user_id>', methods=['PUT'])
+    @app.route('/Usuario/<user_id>', methods=['PUT'])
     def atualizar_usuario(user_id):
         """
         Atualizar informações de um usuário existente
         ---
+        tags:
+          - Usuario
         parameters:
           - name: user_id
             in: path
@@ -131,3 +151,61 @@ def UsuarioRotas(app, db):
             return jsonify(usuario), 200
         except Exception as e:
             raise InternalServerError(f"Ocorreu um erro ao atualizar o usuário: {str(e)}")
+
+    @app.route('/Usuario/<user_id>', methods=['GET'])
+    def obter_usuario(user_id):
+        """
+        Obter informações de um usuário pelo ID
+        ---
+        tags:
+          - Usuario
+        parameters:
+          - name: user_id
+            in: path
+            required: true
+            type: string
+
+        responses:
+          200:
+            description: Informações do usuário retornadas com sucesso
+            schema:
+              type: object
+              properties:
+                login:
+                  type: string
+                nome:
+                  type: string
+                telefone:
+                  type: string
+                rua:
+                    type: string
+                numero:
+                    type: string
+                bairro:
+                    type: string
+                cidade:
+                    type: string
+                loja:
+                    type: string
+                tipo:
+                    type: string
+                status:
+                    type: string
+          404:
+            description: Usuário não encontrado
+        """
+        usuario_collection = db.usuario
+
+        try:
+            # Buscar o usuário pelo ID
+            usuario = usuario_collection.find_one({"_id": user_id})
+
+            if not usuario:
+                raise BadRequest("Usuário não encontrado.")
+
+            # Remover o campo "_id" do retorno (opcional, dependendo do uso)
+            usuario.pop("_id", None)
+
+            return jsonify(usuario), 200
+        except Exception as e:
+            raise InternalServerError(f"Ocorreu um erro ao buscar o usuário: {str(e)}")
