@@ -9,13 +9,13 @@ loja_collection = db.loja
 
 class LojaDal:
     @staticmethod
-    def getLojaId(id):
+    def busca_por_id(id):
         loja = loja_collection.find_one({"_id": ObjectId(id)})
         loja["_id"] = str(loja["_id"])
         return loja
 
     @classmethod
-    def getLojaTelefone(cls, telefone):
+    def busca_por_telefone(cls, telefone):
         loja = loja_collection.find_one({"telefone": telefone})
         loja["_id"] = str(loja["_id"])
         return loja

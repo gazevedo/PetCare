@@ -1,6 +1,7 @@
 from flask import request, jsonify
 from werkzeug.exceptions import InternalServerError, BadRequest
 from src.controller.UsuarioController import UsuarioController
+from src.model.Usuario import Usuario
 
 
 def UsuarioRotas(app):
@@ -9,7 +10,7 @@ def UsuarioRotas(app):
     """
 
     @app.route('/Usuario', methods=['POST'])
-    def criarUsuario():
+    def criar_usuario():
         """
         Criar um novo usuário
         ---
@@ -54,7 +55,7 @@ def UsuarioRotas(app):
               id: Usuario
         """
 
-        return UsuarioController.criarUsuario(request.get_json())
+        return UsuarioController.criar_usuario(request.get_json())
 
     # Rota para atualizar o usuário
     @app.route('/Usuario/<user_id>', methods=['PUT'])
@@ -106,53 +107,11 @@ def UsuarioRotas(app):
             schema:
               id: Usuario
         """
-        usuario_collection = db.usuario
 
-        # Obter dados do corpo da requisição
-        usuario_data = request.get_json()
-
-        # Buscar o usuário pelo ID
-        usuario = usuario_collection.find_one({"_id": user_id})
-
-        if not usuario:
-            raise BadRequest("Usuário não encontrado.")
-
-        # Atualizar os dados do usuário
-        if 'login' in usuario_data and usuario_data['login']:
-            if not UsuarioController.validar_email(usuario_data['login']):
-                raise BadRequest("O campo 'login' deve ser um email válido.")
-            usuario['login'] = usuario_data['login']
-
-        if 'senha' in usuario_data and usuario_data['senha']:
-            usuario['senha'] = usuario_data['senha']
-
-        if 'nome' in usuario_data and usuario_data['nome']:
-            usuario['nome'] = usuario_data['nome']
-
-        if 'telefone' in usuario_data and usuario_data['telefone']:
-            usuario['telefone'] = usuario_data['telefone']
-
-        if 'rua' in usuario_data and usuario_data['rua']:
-            usuario['rua'] = usuario_data['rua']
-
-        if 'numero' in usuario_data and usuario_data['numero']:
-            usuario['numero'] = usuario_data['numero']
-
-        if 'bairro' in usuario_data and usuario_data['bairro']:
-            usuario['bairro'] = usuario_data['bairro']
-
-        if 'cidade' in usuario_data and usuario_data['cidade']:
-            usuario['cidade'] = usuario_data['cidade']
-
-        try:
-            # Atualiza o usuário no banco de dados
-            usuario_collection.update_one({"_id": user_id}, {"$set": usuario})
-            return jsonify(usuario), 200
-        except Exception as e:
-            raise InternalServerError(f"Ocorreu um erro ao atualizar o usuário: {str(e)}")
+        return UsuarioController.atualizar_usuario(request.get_json())
 
     @app.route('/Usuario/<user_id>', methods=['GET'])
-    def obter_usuario(user_id):
+    def buscar_por_id(user_id):
         """
         Obter informações de um usuário pelo ID
         ---
@@ -193,18 +152,50 @@ def UsuarioRotas(app):
           404:
             description: Usuário não encontrado
         """
-        usuario_collection = db.usuario
+        print("busca_por_id " + user_id)
+        return UsuarioController.busca_por_id(user_id)
 
-        try:
-            # Buscar o usuário pelo ID
-            usuario = usuario_collection.find_one({"_id": user_id})
+    @app.route('/Usuario/telefone/<telefone>', methods=['GET'])
+    def buscar_por_telefone(telefone):
+        """
+        Obter informações de um usuário pelo telefone
+        ---
+        tags:
+          - Usuario
+        parameters:
+          - name: telefone
+            in: path
+            required: true
+            type: string
 
-            if not usuario:
-                raise BadRequest("Usuário não encontrado.")
-
-            # Remover o campo "_id" do retorno (opcional, dependendo do uso)
-            usuario.pop("_id", None)
-
-            return jsonify(usuario), 200
-        except Exception as e:
-            raise InternalServerError(f"Ocorreu um erro ao buscar o usuário: {str(e)}")
+        responses:
+          200:
+            description: Informações do usuário retornadas com sucesso
+            schema:
+              type: object
+              properties:
+                login:
+                  type: string
+                nome:
+                  type: string
+                telefone:
+                  type: string
+                rua:
+                    type: string
+                numero:
+                    type: string
+                bairro:
+                    type: string
+                cidade:
+                    type: string
+                loja:
+                    type: string
+                tipo:
+                    type: string
+                status:
+                    type: string
+          404:
+            description: Usuário não encontrado
+        """
+        print("busca_por_telefone "+telefone)
+        return UsuarioController.busca_por_telefone(telefone)

@@ -8,7 +8,7 @@ def LojaRota(app):
     """
     """
     @app.route('/Loja/<id>', methods=['GET'])
-    def getLojaId(id):
+    def busca_por_id(id):
         """
         Obter informações de uma loja pelo ID
         ---
@@ -43,10 +43,10 @@ def LojaRota(app):
           404:
             description: Loja não encontrada
         """
-        return LojaController.getLojaId(id)
+        return LojaController.busca_por_id(id)
 
     @app.route('/Loja/telefone/<telefone>', methods=['GET'])
-    def getLojaTelefone(telefone):
+    def busca_por_telefone(telefone):
         """
         Obter informações de uma loja pelo ID
         ---
@@ -81,5 +81,5 @@ def LojaRota(app):
           404:
             description: Loja não encontrada
         """
-        return LojaController.getLojaTelefone(telefone)
+        return LojaController.busca_por_telefone(telefone)
 
