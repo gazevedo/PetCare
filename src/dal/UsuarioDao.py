@@ -1,13 +1,12 @@
 from bson import ObjectId
-from flask import jsonify
 
 from src.dal.DbConnect import db
-from src.model.Loja import Loja
 
 usuario_collection = db.usuario
+tipo_collection = db.usuario_tipo
 
 
-class UsuarioDal:
+class UsuarioDao:
     @staticmethod
     def busca_por_id(id):
         usuario = usuario_collection.find_one({"_id": ObjectId(id)})
@@ -26,7 +25,7 @@ class UsuarioDal:
         return usuario
 
     @staticmethod
-    def salva_usuario(usuario_data):
+    def criar(usuario_data):
         try:
             # Inserir o documento no MongoDB
             result = usuario_collection.insert_one(usuario_data)
@@ -40,17 +39,19 @@ class UsuarioDal:
             raise Exception(f"Ocorreu um erro ao criar o usuário: {str(e)}")
 
     @staticmethod
-    def atualiza_usuario(usuario_data):
-        try:
-            telefone = usuario_data.get('telefone')
-            usuario_data.pop('_id', None)
+    def atualizar(id, json):
+        result = usuario_collection.update_one(
+            {"_id": ObjectId(id)},
+            {"$set": json}
+        )
+        return result.modified_count >= 0
 
-            resultado = usuario_collection.update_one(
-                {"telefone": telefone},  # Filtro para encontrar o usuário pelo telefone
-                {"$set": usuario_data}  # Dados a serem atualizados
-            )
+    @staticmethod
+    def get_tipos():
+        """
+        Busca todos os tipos de usuário cadastrados na coleção `usuario_tipo`.
 
-            return usuario_data
-
-        except Exception as e:
-            raise Exception(f"Ocorreu um erro ao criar o usuário: {str(e)}")
+        :return: Lista de dicionários com `id`, `descricao` (texto) e `tipo` (número).
+        """
+        tipos = tipo_collection.find({}, {"_id": 1, "descricao": 1, "tipo": 1})
+        return [{"id": str(tipo["_id"]), "descricao": tipo["descricao"], "tipo": tipo.get("tipo", 0)} for tipo in tipos]

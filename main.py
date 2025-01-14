@@ -7,6 +7,7 @@ from flasgger import Swagger
 
 from src.rotas.LojaRota import LojaRota
 from src.rotas.UsuarioRota import UsuarioRotas
+from src.rotas.CaixaRota import CaixaRota
 
 load_dotenv()
 
@@ -19,6 +20,7 @@ swagger = Swagger(app)
 # Registrar as rotas
 UsuarioRotas(app)
 LojaRota(app)
+CaixaRota(app)
 
 if __name__ == "__main__":
     app.run(debug=True)
