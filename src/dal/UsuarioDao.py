@@ -25,6 +25,31 @@ class UsuarioDao:
         return usuario
 
     @staticmethod
+    def busca_por_email(email, loja):
+        usuario = usuario_collection.find_one({"email": email, "loja": loja})
+        if not usuario:
+            return None
+        print("Documento encontrado no MongoDB:", usuario)
+
+        usuario["_id"] = str(usuario["_id"])
+
+        return usuario
+
+    @staticmethod
+    def login(usuario_data):
+        email = usuario_data.get('email')
+        senha = usuario_data.get('senha')
+        lojaId = usuario_data.get('loja')
+
+        usuario = usuario_collection.find_one({"email": email, "senha":senha, "lojaId":lojaId})
+        if not usuario:
+            return None
+        print("Documento encontrado no MongoDB:", usuario)
+
+        usuario["_id"] = str(usuario["_id"])
+        return usuario
+
+    @staticmethod
     def criar(usuario_data):
         try:
             # Inserir o documento no MongoDB

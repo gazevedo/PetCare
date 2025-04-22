@@ -1,8 +1,6 @@
+from flask import Flask, jsonify, request
 from bson import ObjectId
-from flask import jsonify
-
 from src.dal.LojaDao import LojaDao
-
 
 class LojaController:
     @staticmethod
@@ -16,7 +14,7 @@ class LojaController:
             loja = LojaDao.busca_por_id(id)
 
             if not loja:
-                return jsonify({"error": "Loja não encontrada"}), 500
+                return jsonify({"error": "Loja não encontrada"}), 404  # Alterado para 404 quando não encontrar
 
             return jsonify(loja), 200
         except Exception as e:
@@ -28,7 +26,7 @@ class LojaController:
             loja = LojaDao.busca_por_telefone(telefone)
 
             if not loja:
-                return jsonify({"error": "Loja não encontrada"}), 404
+                return jsonify({"error": "Loja não encontrada"}), 404  # Alterado para 404 quando não encontrar
 
             return jsonify(loja), 200
         except Exception as e:
@@ -52,7 +50,7 @@ class LojaController:
             atualizado = LojaDao.atualizar(ObjectId(id), json)
 
             if not atualizado:
-                return jsonify({"error": "Loja não encontrada para atualizar"}), 404
+                return jsonify({"error": "Loja não encontrada para atualização"}), 404  # Alterado para 404 quando não encontrado
 
             return jsonify({"message": "Loja atualizada com sucesso"}), 200
         except Exception as e:
@@ -71,7 +69,7 @@ class LojaController:
             # Validar se a loja já existe no banco
             loja_existente = LojaDao.busca_por_telefone(json.get("telefone"))
             if loja_existente:
-                return jsonify({"error": "Uma loja com este telefone já existe"}), 409
+                return jsonify({"error": "Uma loja com este telefone já existe"}), 409  # Alterado para 409 para conflito
 
             json["status"] = 1
 
@@ -81,5 +79,3 @@ class LojaController:
             return jsonify({"message": "Loja criada com sucesso", "id": str(loja_id)}), 201
         except Exception as e:
             return jsonify({"error": f"Ocorreu um erro ao criar a loja: {str(e)}"}), 500
-
-

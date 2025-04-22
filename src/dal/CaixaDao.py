@@ -82,4 +82,17 @@ class CaixaDao:
         result = movimentacao_collection.insert_one(movimentacao)
         return str(result.inserted_id)
 
+    @staticmethod
+    def buscar_caixa_aberto(loja_id, usuario_id):
+        try:
+            # Consultando o banco com PyMongo
+            caixa_aberto = movimentacao_collection.find_one({
+                "lojaID": loja_id,
+                "usuarioId": usuario_id,
+                "dataFechamento": None
+            })
+            return caixa_aberto
+        except Exception as e:
+            raise Exception(f"Ocorreu um erro ao buscar caixa aberto: {str(e)}")
+
 

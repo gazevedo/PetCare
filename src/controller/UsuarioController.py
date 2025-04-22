@@ -3,24 +3,54 @@ import re
 from bson import ObjectId
 from flask import jsonify
 from werkzeug.exceptions import BadRequest, InternalServerError
-
-from src.dal.LojaDao import LojaDao
 from src.dal.UsuarioDao import UsuarioDao
+from src.helper.JwtHelper import gerar_token
+from src.model.Usuario import Usuario
 
 
 class UsuarioController:
+
+    @staticmethod
+    def auth_usuario(usuario_data):
+        email = usuario_data.get('email')
+        senha = usuario_data.get('senha')
+        loja = usuario_data.get('loja')
+
+        if not email or not senha or not loja:
+            raise BadRequest("Usuário inválido")
+
+        usuario = UsuarioDao.busca_por_email(email, loja)
+        if usuario['email'] == email and usuario['senha'] == senha and usuario['loja'] == loja:
+            usuarioObj = Usuario.from_dict(usuario)
+            token = gerar_token(usuarioObj)
+            return token
+        else:
+            raise BadRequest("Autenticação inválida.")
+
+
     @staticmethod
     def criar_usuario(usuario_data):
-        telefone = usuario_data.get('telefone')
-        tipo = usuario_data.get('tipo')
+        email = usuario_data.get('email')
         lojaId = usuario_data.get('loja')
+        senha = usuario_data.get('senha')
+        tipo = usuario_data.get('tipo')
+        telefone = usuario_data.get('telefone')
 
         #valida campos
+        if not email:
+            raise BadRequest("Os campos 'email' é obrigatório.")
+
         if not telefone:
             raise BadRequest("Os campos 'telefone' é obrigatório.")
 
         if not tipo:
             raise BadRequest("O campo 'tipo' é obrigatório.")
+
+        if not lojaId:
+            raise BadRequest("O campo 'lojaId' é obrigatório.")
+
+        if not senha:
+            raise BadRequest("O campo 'senha' é obrigatório.")
 
         # Valida se o tipo existe
         tipos_existentes = UsuarioDao.get_tipos()
@@ -29,19 +59,13 @@ class UsuarioController:
             raise BadRequest(f"O tipo informado não existe.")
 
         #valida duplicado
-        if UsuarioDao.busca_por_telefone(telefone):
-            raise BadRequest("Já existe um usuário com este telefone.")
-
-        #valida cliente
-        loja = LojaDao.busca_por_id(lojaId)
-
-        if not loja:
-            raise BadRequest("Loja não encontrada.")
+        if UsuarioDao.busca_por_email(email, lojaId):
+            raise BadRequest("Já existe um usuário com este email.")
 
         try:
             usuario = UsuarioDao.criar(usuario_data)
 
-            return jsonify(usuario), 201
+            return usuario
         except Exception as e:
             raise InternalServerError(f"Ocorreu um erro ao criar o usuário: {str(e)}")
 

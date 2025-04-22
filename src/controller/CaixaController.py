@@ -1,5 +1,4 @@
 from datetime import datetime
-
 from bson import ObjectId
 from flask import jsonify
 from src.dal.CaixaDao import CaixaDao
@@ -39,14 +38,13 @@ class CaixaController:
         try:
             # Verificar se a lista de movimentações não está vazia
             movimentacoes = caixa.get("movimentacoes")
-
             if not movimentacoes or len(movimentacoes) == 0:
                 return jsonify({"error": "A lista de movimentações não pode estar vazia"}), 400
 
             primeira_movimentacao = movimentacoes[0]
-            movimentacoes_cadastradas  = CaixaDao.buscar_tipos_movimentacao()
+            movimentacoes_cadastradas = CaixaDao.buscar_tipos_movimentacao()
 
-            #valida data
+            # Validar data
             try:
                 datetime.strptime(primeira_movimentacao["data"], "%Y-%m-%dT%H:%M:%S.%fZ")
             except ValueError:
@@ -58,18 +56,17 @@ class CaixaController:
             if valor is None:
                 return jsonify({"error": "O valor da movimentação é obrigatório"}), 400
 
-            # validar tipo
+            # Validar tipo
             tipos_validos = [mov["tipo"] for mov in movimentacoes_cadastradas]
             if primeira_movimentacao["tipo"] not in tipos_validos:
                 return jsonify({"error": "Tipo de movimentação inválido"}), 400
 
-            if primeira_movimentacao["tipo"] == "0": #abertura
+            if primeira_movimentacao["tipo"] == "0":  # Abertura
                 return CaixaController.registra_abertura(caixa)
-            elif primeira_movimentacao["tipo"] == "1": #fechamento
+            elif primeira_movimentacao["tipo"] == "1":  # Fechamento
                 return CaixaController.registra_fechamento(caixa)
             else:
-                return CaixaController.registra_movimentaccao(caixa)
-                pass
+                return CaixaController.registra_movimentacao(caixa)
         except Exception as e:
             return jsonify({"error": f"Ocorreu um erro ao registrar movimentação: {str(e)}"}), 500
 
@@ -99,65 +96,57 @@ class CaixaController:
     @staticmethod
     def registra_abertura(caixa):
         try:
+            # Verificar se já existe um caixa aberto para a loja ou usuário
+            caixa_aberto = CaixaDao.buscar_caixa_aberto(caixa["lojaID"], caixa["usuarioId"])
+
+            if caixa_aberto:
+                return jsonify({"error": "Já existe um caixa aberto. Feche o caixa atual antes de abrir outro."}), 400
+
             # Verificar se `caixaId` é diferente de nulo
             if caixa.get("caixaId") is not None:
                 return jsonify({"error": "Já existe um caixa aberto. Feche o caixa atual antes de abrir outro."}), 400
 
-            # Validar `lojaID`
+            # Validar `lojaID` e `usuarioId`
             if not caixa.get("lojaID"):
                 return jsonify({"error": "O campo 'lojaID' é obrigatório"}), 400
-
-            # Validar `usuarioId`
             if not caixa.get("usuarioId"):
                 return jsonify({"error": "O campo 'usuarioId' é obrigatório"}), 400
 
-            CaixaController.salva_movimentacao(caixa)
-
+            return CaixaController.salva_movimentacao(caixa)
         except Exception as e:
             return jsonify({"error": f"Ocorreu um erro ao registrar abertura: {str(e)}"}), 500
 
     @staticmethod
     def registra_fechamento(caixa):
-        # Verificar se `caixaId` é nulo
+        # Validar os campos obrigatórios
         if not caixa.get("caixaId"):
             return jsonify({"error": "O campo 'caixaId' é obrigatório"}), 400
-
-        # Validar `lojaID`
         if not caixa.get("lojaID"):
             return jsonify({"error": "O campo 'lojaID' é obrigatório"}), 400
-
-        # Validar `usuarioId`
         if not caixa.get("usuarioId"):
             return jsonify({"error": "O campo 'usuarioId' é obrigatório"}), 400
 
-        caixa = CaixaDao.buscar_por_id(ObjectId(id))
-
+        caixa = CaixaDao.buscar_por_id(ObjectId(caixa["caixaId"]))
         if not caixa:
             return jsonify({"error": "Caixa não encontrado"}), 404
-        else:
-            CaixaController.salva_movimentacao(caixa)
 
+        return CaixaController.salva_movimentacao(caixa)
 
     @staticmethod
-    def registra_movimentaccao( caixa):
-        # Verificar se `caixaId` é nulo
+    def registra_movimentacao(caixa):
+        # Validar os campos obrigatórios
         if not caixa.get("caixaId"):
             return jsonify({"error": "O campo 'caixaId' é obrigatório"}), 400
-
-        # Validar `lojaID`
         if not caixa.get("lojaID"):
             return jsonify({"error": "O campo 'lojaID' é obrigatório"}), 400
-
-        # Validar `usuarioId`
         if not caixa.get("usuarioId"):
             return jsonify({"error": "O campo 'usuarioId' é obrigatório"}), 400
 
-        caixa = CaixaDao.buscar_por_id(ObjectId(id))
-
+        caixa = CaixaDao.buscar_por_id(ObjectId(caixa["caixaId"]))
         if not caixa:
             return jsonify({"error": "Caixa não encontrado"}), 404
-        else:
-            CaixaController.salva_movimentacao(caixa)
+
+        return CaixaController.salva_movimentacao(caixa)
 
     @staticmethod
     def salva_movimentacao(caixa):
@@ -165,11 +154,6 @@ class CaixaController:
             # Salvar a movimentação no MongoDB usando CaixaDao
             caixa = CaixaDao.salvar_movimentacao(caixa)
 
-            # Se a movimentação foi salva com sucesso
             return jsonify({"message": "Movimentação registrada com sucesso", "movimentacao": caixa}), 200
-
         except Exception as e:
             return jsonify({"error": f"Ocorreu um erro ao salvar a movimentação: {str(e)}"}), 500
-
- 
-        

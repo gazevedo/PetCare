@@ -56,7 +56,7 @@ def CaixaRota(app):
     @app.route('/Caixa/registrar_movimentacao', methods=['POST'])
     def registrar_movimentacao():
         """
-        registrar uma nova movimentação financeira.
+        Registrar uma nova movimentação financeira no caixa.
         ---
         tags:
           - Caixa
@@ -69,19 +69,52 @@ def CaixaRota(app):
               properties:
                 caixaId:
                   type: string
-                tipoId:
+                  description: Identificador único do caixa.
+                lojaID:
                   type: string
-                valor:
-                  type: number
-                  format: float
-                data:
+                  description: Identificador único da loja associada ao caixa.
+                usuarioId:
                   type: string
-                  format: date-time
+                  description: Identificador único do usuário que está registrando a movimentação.
+                movimentacoes:
+                  type: array
+                  description: Lista de movimentações financeiras.
+                  items:
+                    type: object
+                    properties:
+                      data:
+                        type: string
+                        format: date-time
+                        description: Data da movimentação.
+                      tipo:
+                        type: number
+                        description: Tipo da movimentação (associado a `MovimentacaoTipo`).
+                      valor:
+                        type: number
+                        format: float
+                        description: Valor da movimentação.
+              required:
+                - caixaId
+                - lojaID
+                - usuarioId
+                - movimentacoes
         responses:
           201:
-            description: Movimentação criada com sucesso.
+            description: Movimentação registrada com sucesso.
+            schema:
+              type: object
+              properties:
+                mensagem:
+                  type: string
+                  example: "Movimentação registrada com sucesso."
           400:
             description: Erro na validação dos dados enviados.
+            schema:
+              type: object
+              properties:
+                error:
+                  type: string
+                  example: "Erro na validação dos dados."
         """
         return CaixaController.registrar_movimentacao(request.json)
 
