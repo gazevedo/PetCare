@@ -172,6 +172,30 @@ def UsuarioRotas(app):
         else:
             return jsonify({"error": "Usuário não encontrado"}), 404  # Erro caso não encontre o usuário
 
+    @app.route('/Usuario/buscar_usuario', methods=['GET'])
+    def buscar_usuario():
+        """
+        Obter informações do usuário autenticado via token JWT
+        ---
+        tags:
+          - Usuario
+        security:
+          - BearerAuth: []
+        responses:
+          200:
+            description: Informações do usuário retornadas com sucesso
+          401:
+            description: Token inválido ou expirado
+          404:
+            description: Usuário não encontrado
+        """
+        resultado, status = UsuarioController.busca_usuario()
+        if resultado:
+            return jsonify(resultado), 200  # Resposta 200 com o JSON
+        else:
+            return jsonify({"error": "Usuário não encontrado"}), 404  # Erro caso não encontre o usuário
+
+
     @app.route('/Usuario/buscar_por_telefone/<telefone>', methods=['GET'])
     def buscar_por_telefone(telefone):
         """

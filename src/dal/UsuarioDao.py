@@ -32,7 +32,6 @@ class UsuarioDao:
         print("Documento encontrado no MongoDB:", usuario)
 
         usuario["_id"] = str(usuario["_id"])
-
         return usuario
 
     @staticmethod

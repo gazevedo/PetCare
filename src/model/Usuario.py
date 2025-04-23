@@ -16,21 +16,3 @@ class Usuario:
         self.loja = _lojaId
         self.tipo = _tipoId
         self.status = _status
-
-    @classmethod
-    def from_dict(cls, data):
-        return cls(
-            _id=data.get('_id'),
-            _email=data.get('email'),  # ou 'login', conforme o campo real
-            _senha=data.get('senha'),
-            _nome=data.get('nome'),
-            _telefone=data.get('telefone'),
-            _rua=data.get('rua'),
-            _numero=data.get('numero'),
-            _bairro=data.get('bairro'),
-            _cidade=data.get('cidade'),
-            _cpf=data.get('cpf'),
-            _lojaId=data.get('loja'),
-            _tipoId=data.get('tipo'),
-            _status=data.get('status'),
-        )

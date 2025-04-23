@@ -15,8 +15,8 @@ def gerar_token(usuario):
 
     # Dados que serão codificados no JWT
     payload = {
-        'id': usuario.id,
-        'loja': usuario.loja
+        'id': usuario['_id'],
+        'loja': usuario['loja']
     }
 
     # Gera o token JWT
@@ -37,3 +37,15 @@ def verificar_token(token):
         return {"message": "Token expirado!"}, 403
     except jwt.InvalidTokenError:
         return {"message": "Token inválido!"}, 403
+
+
+def token_decode_id(auth_header):
+    token = auth_header.split(" ")[1]  # Pega o token sem o "Bearer"
+    try:
+        # Decodifica o token JWT e extrai o payload
+        decoded_token = jwt.decode(token, SECRET_KEY, algorithms=['HS256'])
+        return decoded_token.get('_id')  # Retorna o 'id' presente no token
+    except jwt.ExpiredSignatureError:
+        return None  # Token expirado
+    except jwt.InvalidTokenError:
+        return None  # Token inválido

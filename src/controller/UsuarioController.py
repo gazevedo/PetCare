@@ -1,10 +1,10 @@
 import re
-
+import jwt
 from bson import ObjectId
-from flask import jsonify
-from werkzeug.exceptions import BadRequest, InternalServerError
+from flask import request, jsonify
+from werkzeug.exceptions import BadRequest, NotFound, Unauthorized, InternalServerError
 from src.dal.UsuarioDao import UsuarioDao
-from src.helper.JwtHelper import gerar_token
+from src.helper.JwtHelper import gerar_token, token_decode_id
 from src.model.Usuario import Usuario
 
 
@@ -20,13 +20,11 @@ class UsuarioController:
             raise BadRequest("Usuário inválido")
 
         usuario = UsuarioDao.busca_por_email(email, loja)
-        if usuario['email'] == email and usuario['senha'] == senha and usuario['loja'] == loja:
-            usuarioObj = Usuario.from_dict(usuario)
-            token = gerar_token(usuarioObj)
+        if usuario and usuario['email'] == email and usuario['senha'] == senha and usuario['loja'] == loja:
+            token = gerar_token(usuario)
             return token
         else:
-            raise BadRequest("Autenticação inválida.")
-
+            raise Unauthorized("Autenticação inválida.")
 
     @staticmethod
     def criar_usuario(usuario_data):
@@ -36,35 +34,27 @@ class UsuarioController:
         tipo = usuario_data.get('tipo')
         telefone = usuario_data.get('telefone')
 
-        #valida campos
         if not email:
-            raise BadRequest("Os campos 'email' é obrigatório.")
-
+            raise BadRequest("O campo 'email' é obrigatório.")
         if not telefone:
-            raise BadRequest("Os campos 'telefone' é obrigatório.")
-
+            raise BadRequest("O campo 'telefone' é obrigatório.")
         if not tipo:
             raise BadRequest("O campo 'tipo' é obrigatório.")
-
         if not lojaId:
             raise BadRequest("O campo 'lojaId' é obrigatório.")
-
         if not senha:
             raise BadRequest("O campo 'senha' é obrigatório.")
 
-        # Valida se o tipo existe
         tipos_existentes = UsuarioDao.get_tipos()
-        tipos_validos = [tipo["tipo"] for tipo in tipos_existentes]  # Validar pelo campo 'tipo'
+        tipos_validos = [tipo["tipo"] for tipo in tipos_existentes]
         if tipo not in tipos_validos:
-            raise BadRequest(f"O tipo informado não existe.")
+            raise BadRequest("O tipo informado não existe.")
 
-        #valida duplicado
         if UsuarioDao.busca_por_email(email, lojaId):
             raise BadRequest("Já existe um usuário com este email.")
 
         try:
             usuario = UsuarioDao.criar(usuario_data)
-
             return usuario
         except Exception as e:
             raise InternalServerError(f"Ocorreu um erro ao criar o usuário: {str(e)}")
@@ -76,79 +66,94 @@ class UsuarioController:
             tipo = json.get('tipo')
 
             if not ObjectId.is_valid(id):
-                return jsonify({"error": "ID inválido"}), 400
+                raise BadRequest("ID inválido.")
 
-            # valida campos
             if not telefone:
-                raise BadRequest("Os campos 'telefone' é obrigatório.")
-
+                raise BadRequest("O campo 'telefone' é obrigatório.")
             if not tipo:
                 raise BadRequest("O campo 'tipo' é obrigatório.")
 
-            # Valida se o tipo existe
             tipos_existentes = UsuarioDao.get_tipos()
-            tipos_validos = [tipo["tipo"] for tipo in tipos_existentes]  # Validar pelo campo 'tipo'
+            tipos_validos = [tipo["tipo"] for tipo in tipos_existentes]
             if tipo not in tipos_validos:
                 raise BadRequest(f"O tipo '{tipo}' não existe.")
 
             usuario = UsuarioDao.busca_por_id(id)
             if not usuario:
-                return jsonify({"error": "Usuário não encontrado"}), 404
-            print("id " + id)
-            print("json " + str(json))
+                raise NotFound("Usuário não encontrado.")
+
             atualizado = UsuarioDao.atualizar(ObjectId(id), json)
-            print("result "+str(atualizado))
             if not atualizado:
-                return jsonify({"error": "Usuário não encontrado para atualizar"}), 404
+                raise NotFound("Usuário não encontrado para atualizar.")
 
             return jsonify({"message": "Usuário atualizado com sucesso"}), 200
+
+        except (BadRequest, NotFound) as e:
+            raise e
         except Exception as e:
-            return jsonify({"error": f"Ocorreu um erro ao buscar o usuário: {str(e)}"}), 500
+            raise InternalServerError(f"Ocorreu um erro ao atualizar o usuário: {str(e)}")
+
+    @staticmethod
+    def busca_usuario():
+        try:
+            auth_header = request.headers.get('Authorization')
+            if not auth_header:
+                raise Unauthorized("Token de autorização não fornecido.")
+
+            usuario_id = token_decode_id(auth_header)
+            if not usuario_id:
+                raise Unauthorized("Token inválido ou expirado.")
+
+            usuario = UsuarioDao.busca_por_id(usuario_id)
+            if not usuario:
+                raise NotFound("Usuário não encontrado.")
+
+            usuario.pop('senha', None)
+            return jsonify(usuario), 200
+
+        except (BadRequest, NotFound, Unauthorized) as e:
+            raise e
+        except Exception as e:
+            raise InternalServerError(f"Ocorreu um erro ao buscar o usuário: {str(e)}")
 
     @staticmethod
     def busca_por_id(id):
         try:
-            # Verificar se o id é um ObjectId válido
             if not ObjectId.is_valid(id):
-                return jsonify({"error": "ID inválido"}), 400
+                raise BadRequest("ID inválido.")
 
-            # Converter id para ObjectId
             usuario = UsuarioDao.busca_por_id(id)
-
             if not usuario:
-                return jsonify({"error": "Usuário não encontrado"}), 500
+                raise NotFound("Usuário não encontrado.")
 
             return jsonify(usuario), 200
+
+        except (BadRequest, NotFound) as e:
+            raise e
         except Exception as e:
-            return jsonify({"error": f"Ocorreu um erro ao buscar o usuário: {str(e)}"}), 500
+            raise InternalServerError(f"Ocorreu um erro ao buscar o usuário: {str(e)}")
 
     @staticmethod
     def busca_por_telefone(telefone):
         try:
             usuario = UsuarioDao.busca_por_telefone(telefone)
             if not usuario:
-                return jsonify({"error": "Usuário não encontrado"}), 500
+                raise NotFound("Usuário não encontrado.")
 
             return jsonify(usuario), 200
-        except Exception as e:
-            return jsonify({"error": f"Ocorreu um erro ao buscar o usuário: {str(e)}"}), 500
 
+        except NotFound as e:
+            raise e
+        except Exception as e:
+            raise InternalServerError(f"Ocorreu um erro ao buscar o usuário: {str(e)}")
 
     @staticmethod
     def validar_email(email):
-        """
-        Função para validar se o email está no formato correto.
-        """
         regex = r'^[a-zA-Z0-9_.+-]+@[a-zA-Z0-9-]+\.[a-zA-Z0-9-.]+$'
         return bool(re.match(regex, email))
 
     @staticmethod
     def get_tipos():
-        """
-        Busca todos os tipos de usuários e os retorna como JSON.
-
-        :return: JSON contendo a lista de tipos de usuários.
-        """
         try:
             tipos = UsuarioDao.get_tipos()
             return jsonify(tipos), 200

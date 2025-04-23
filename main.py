@@ -13,8 +13,21 @@ load_dotenv()
 
 # Criar a instância do Flask
 app = Flask(__name__)
-CORS(app, resources={r"/*": {"origins": "*"}}, supports_credentials=True, methods=["GET", "POST", "OPTIONS"])
+CORS(app, resources={r"/*": {"origins": "http://localhost:5173"}}, supports_credentials=True, methods=["GET", "POST", "OPTIONS"])
+# 🔥 Adiciona isso AQUI para lidar com requisição OPTIONS (pré-flight)
+@app.before_request
+def handle_options():
+    if request.method == 'OPTIONS':
+        response = app.make_default_options_response()
 
+        headers = response.headers
+        headers["Access-Control-Allow-Origin"] = "http://localhost:5173"
+        headers["Access-Control-Allow-Headers"] = "Content-Type, Authorization"
+        headers["Access-Control-Allow-Methods"] = "GET, POST, OPTIONS"
+        headers["Access-Control-Allow-Credentials"] = "true"
+
+        return response
+# 🔥 até aqui
 
 # Função de validação do token
 def verificar_token():
